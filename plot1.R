@@ -1,29 +1,18 @@
-data_file <- "household_power_consumption.txt"
-desktop_file <- file.path(Sys.getenv("HOME"), "Desktop", data_file)
+NEI <- readRDS("summarySCC_PM25.rds")
 
-if (!file.exists(data_file)) {
-  data_file <- desktop_file
-}
-
-power_data <- read.table(
-  data_file,
-  header = TRUE,
-  sep = ";",
-  na.strings = "?",
-  colClasses = c("character", "character", rep("numeric", 7))
-)
-
-power_data <- power_data[power_data$Date %in% c("1/2/2007", "2/2/2007"), ]
-power_data$DateTime <- strptime(
-  paste(power_data$Date, power_data$Time),
-  format = "%d/%m/%Y %H:%M:%S"
-)
+total_emissions <- aggregate(Emissions ~ year, NEI, sum)
 
 png("plot1.png", width = 480, height = 480)
-hist(
-  power_data$Global_active_power,
-  col = "red",
-  main = "Global Active Power",
-  xlab = "Global Active Power (kilowatts)"
+plot(
+  total_emissions$year,
+  total_emissions$Emissions,
+  type = "b",
+  pch = 19,
+  lwd = 2,
+  xaxt = "n",
+  xlab = "Year",
+  ylab = "Total PM2.5 emissions (tons)",
+  main = "Total PM2.5 Emissions in the United States"
 )
+axis(1, at = total_emissions$year)
 dev.off()

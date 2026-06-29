@@ -1,66 +1,24 @@
-data_file <- "household_power_consumption.txt"
-desktop_file <- file.path(Sys.getenv("HOME"), "Desktop", data_file)
+library(ggplot2)
 
-if (!file.exists(data_file)) {
-  data_file <- desktop_file
-}
+NEI <- readRDS("summarySCC_PM25.rds")
+SCC <- readRDS("Source_Classification_Code.rds")
 
-power_data <- read.table(
-  data_file,
-  header = TRUE,
-  sep = ";",
-  na.strings = "?",
-  colClasses = c("character", "character", rep("numeric", 7))
-)
+coal_combustion_scc <- SCC$SCC[grepl("Coal", SCC$EI.Sector)]
 
-power_data <- power_data[power_data$Date %in% c("1/2/2007", "2/2/2007"), ]
-power_data$DateTime <- strptime(
-  paste(power_data$Date, power_data$Time),
-  format = "%d/%m/%Y %H:%M:%S"
-)
+coal_emissions <- subset(NEI, SCC %in% coal_combustion_scc)
+coal_totals <- aggregate(Emissions ~ year, coal_emissions, sum)
 
 png("plot4.png", width = 480, height = 480)
-par(mfrow = c(2, 2))
-
-plot(
-  power_data$DateTime,
-  power_data$Global_active_power,
-  type = "l",
-  xlab = "",
-  ylab = "Global Active Power"
+print(
+  ggplot(coal_totals, aes(x = year, y = Emissions)) +
+    geom_line(color = "steelblue", linewidth = 1) +
+    geom_point(color = "steelblue", size = 2) +
+    scale_x_continuous(breaks = sort(unique(coal_totals$year))) +
+    labs(
+      title = "Coal Combustion PM2.5 Emissions in the United States",
+      x = "Year",
+      y = "Total PM2.5 emissions (tons)"
+    ) +
+    theme_bw()
 )
-
-plot(
-  power_data$DateTime,
-  power_data$Voltage,
-  type = "l",
-  xlab = "datetime",
-  ylab = "Voltage"
-)
-
-plot(
-  power_data$DateTime,
-  power_data$Sub_metering_1,
-  type = "l",
-  xlab = "",
-  ylab = "Energy sub metering"
-)
-lines(power_data$DateTime, power_data$Sub_metering_2, col = "red")
-lines(power_data$DateTime, power_data$Sub_metering_3, col = "blue")
-legend(
-  "topright",
-  col = c("black", "red", "blue"),
-  lty = 1,
-  bty = "n",
-  legend = c("Sub_metering_1", "Sub_metering_2", "Sub_metering_3")
-)
-
-plot(
-  power_data$DateTime,
-  power_data$Global_reactive_power,
-  type = "l",
-  xlab = "datetime",
-  ylab = "Global_reactive_power"
-)
-
 dev.off()
